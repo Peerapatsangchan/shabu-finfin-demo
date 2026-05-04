@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin | จัดการคิวร้านอาหาร</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="container" id="app">
+
+  <div class="header">
+    <div class="brand">
+      <img class="logo" src="shabu.png" alt="Shabu / BBQ Logo" />
+      <h1>Admin Shabu Fin Fin</h1>
+    </div>
+    <div class="flex">
+      <button class="btn bad" id="btnLogout" style="display:none">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <!-- Login -->
+  <div class="card" id="loginBox" aria-live="polite">
+    <div class="row">
+      <div>
+        <label for="u">ชื่อผู้ใช้</label>
+        <input id="u" class="input" placeholder="admin" autocomplete="username" />
+      </div>
+      <div>
+        <label for="p">รหัสผ่าน</label>
+        <input id="p" class="input" type="password" placeholder="123456" autocomplete="current-password" />
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <button class="btn primary" id="btnLogin">เข้าสู่ระบบ</button>
+      <span class="help">* เดโม่: admin / 123456</span>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dash" style="display:none" aria-live="polite">
+    <div class="grid cols-3">
+      <div class="card">
+        <div class="kv"><div>ลูกค้าทั้งหมดวันนี้</div><div class="badge" id="st_total">0</div></div>
+        <div class="kv"><div>กำลังรอ</div><div class="badge warn" id="st_waiting">0</div></div>
+        <div class="kv"><div>เสิร์ฟแล้ว</div><div class="badge ok" id="st_served">0</div></div>
+        <div class="kv"><div>ยกเลิก</div><div class="badge bad" id="st_cancel">0</div></div>
+        <div class="kv"><div>เวลารอเฉลี่ย</div><div class="badge" id="st_avg">0 นาที</div></div>
+      </div>
+
+      <div class="card">
+        <div class="flex">
+          <button class="btn ok" id="btnNext">📢 เรียกคิวถัดไป</button>
+          <button class="btn" id="btnExport">⬇️ ส่งออก CSV</button>
+        </div>
+        <p class="small">ระบบจะพยายามจัดโต๊ะให้พอดีกับจำนวนลูกค้า (Reservation มาก่อน Walk-in)</p>
+        <div id="lastCalled" class="small" aria-live="polite"></div>
+        <hr />
+        <!-- ตั้งค่าเวลาต่อโต๊ะ -->
+        <div class="flex" style="gap:8px">
+          <input id="svcMins" class="input" type="number" min="15" max="240" placeholder="เวลาต่อโต๊ะ (นาที)">
+          <button class="btn" id="btnSvc">ตั้งค่าเวลา</button>
+          <span class="small">ปัจจุบัน: <span id="svcNow"></span> นาที</span>
+        </div>
+        <!-- ตั้งค่า Hold นาที -->
+        <div class="flex" style="gap:8px; margin-top:8px">
+          <input id="holdMins" class="input" type="number" min="1" max="30" placeholder="เวลารอรับโต๊ะ (นาที)">
+          <button class="btn" id="btnHold">ตั้งค่า Hold</button>
+          <span class="small">ปัจจุบัน: <span id="holdNow"></span> นาที</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="input-inline">
+          <input class="input" id="qName" placeholder="ค้นหาชื่อ" />
+          <input class="input" id="qDate" type="date" />
+          <button class="btn" id="btnSearch">ค้นหา</button>
+        </div>
+        <div id="searchOut" class="small" style="margin-top:8px;opacity:.8"></div>
+        <div id="searchTableWrap" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:12px">
+      <!-- Queue list -->
+      <div class="card">
+        <div class="flex"><h3 style="margin:0">คิวที่กำลังรอ</h3><span class="right help">คลิกปุ่มสำหรับจัดการ</span></div>
+        <table class="table" id="tblQueue">
+          <thead><tr><th>#</th><th>ประเภท</th><th>ชื่อ</th><th>คน</th><th>เวลาที่ต้องการ/มาถึง</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Tables -->
+      <div class="card">
+        <div class="flex"><h3 style="margin:0">โต๊ะ</h3><span class="right help">กด “นั่งโต๊ะ” เมื่อผู้ใช้มาถึง, “ทำบิล/โต๊ะว่าง” เมื่อเสร็จสิ้น</span></div>
+        <div id="tables" class="grid cols-2"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h3>ประวัติวันนี้ (จบแล้ว)</h3>
+      <table class="table" id="tblHistory">
+        <thead><tr><th>เวลา</th><th>ชื่อ</th><th>ประเภท</th><th>สถานะ</th><th>คน</th><th>โต๊ะ</th><th>ยอดรวม</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Core app -->
+<script src="queue.js"></script>
+
+<script>
+/* ====== โค้ดหน้า Admin เดิม (ไม่ตัดทอน) — เหมือนเวอร์ชันก่อนหน้า ยกเว้นปุ่ม "ทำบิล" มีอยู่แล้ว ====== */
+document.addEventListener('DOMContentLoaded', () => {
+  const loginBox = document.getElementById('loginBox');
+  const dash = document.getElementById('dash');
+  const btnLogout = document.getElementById('btnLogout');
+  const btnLogin = document.getElementById('btnLogin');
+  const btnNext = document.getElementById('btnNext');
+  const btnExport = document.getElementById('btnExport');
+  const btnSearch = document.getElementById('btnSearch');
+  const qName = document.getElementById('qName');
+  const qDate = document.getElementById('qDate');
+  const lastCalled = document.getElementById('lastCalled');
+  const searchOut = document.getElementById('searchOut');
+  const searchTableWrap = document.getElementById('searchTableWrap');
+
+  const svcMins = document.getElementById('svcMins');
+  const btnSvc = document.getElementById('btnSvc');
+  const svcNow = document.getElementById('svcNow');
+
+  const holdMins = document.getElementById('holdMins');
+  const btnHold = document.getElementById('btnHold');
+  const holdNow = document.getElementById('holdNow');
+
+  function gate(){
+    if(QueueApp.isAdmin()){
+      loginBox.style.display='none';
+      dash.style.display='block';
+      btnLogout.style.display='inline-flex';
+      svcNow.textContent = QueueApp.getServiceLimit();
+      holdNow.textContent = QueueApp.getHoldLimit();
+      renderAll();
+    }else{
+      loginBox.style.display='block';
+      dash.style.display='none';
+      btnLogout.style.display='none';
+    }
+  }
+  gate();
+
+  btnLogin.onclick = ()=>{
+    const u = (document.getElementById('u').value||'').trim();
+    const p = (document.getElementById('p').value||'').trim();
+    const res = QueueApp.adminLogin({username:u, password:p});
+    if(res.ok){ gate(); } else alert(res.msg||'เข้าสู่ระบบไม่สำเร็จ');
+  };
+  btnLogout.onclick = ()=>{ QueueApp.adminLogout(); gate(); };
+
+  btnSvc.onclick = ()=>{
+    const v = parseInt(svcMins.value||'',10);
+    const n = QueueApp.setServiceLimit(v);
+    svcNow.textContent = n;
+    alert(`ตั้งเวลาต่อโต๊ะ = ${n} นาที`);
+  };
+  btnHold.onclick = ()=>{
+    const v = parseInt(holdMins.value||'',10);
+    const n = QueueApp.setHoldLimit(v);
+    holdNow.textContent = n;
+    alert(`ตั้งเวลา Hold = ${n} นาที`);
+  };
+
+  btnNext.onclick = ()=>{
+    const r = QueueApp.nextQueue();
+    if(!r.ok){
+      if(r.reason==='NO_TABLE') alert('ยังไม่มีโต๊ะว่างสำหรับจำนวนคนคิวถัดไป');
+      else alert('ไม่มีคิวที่เรียกได้ตอนนี้');
+      return;
+    }
+    const it = r.item;
+    const when = new Date(it.type==='reservation'? it.requestedTime : it.checkInTime).toLocaleTimeString();
+    lastCalled.textContent = `เรียกคุณ ${it.name} (${it.type==='reservation'?'จอง':'Walk-in'} ${when}) → จองโต๊ะ ${it.tableId} ชั่วคราว (${QueueApp.getHoldLimit()} นาที) – สถานะ: เรียกแล้ว`;
+    QueueApp.beep();
+    renderAll();
+  };
+
+  btnExport.onclick = ()=>QueueApp.exportCSV();
+
+  btnSearch.onclick = ()=>{
+    const name = qName.value.trim().toLowerCase();
+    const date = qDate.value;
+    const d = QueueApp.load();
+    const arr = [...d.items, ...d.history].filter(it=>{
+      const byName = name? (it.name||'').toLowerCase().includes(name): true;
+      const byDate = date? (it.createdAt||'').slice(0,10)===date : true;
+      return byName && byDate;
+    });
+    searchOut.textContent = `พบ ${arr.length} รายการ`;
+
+    if(arr.length){
+      const rows = arr.slice(0,30).map(it=>`
+        <tr>
+          <td>${QueueApp.esc(it.type)}</td>
+          <td>${QueueApp.esc(it.name)}</td>
+          <td>${it.party}</td>
+          <td>${QueueApp.esc(it.status||'-')}</td>
+          <td>${new Date(it.createdAt||it.requestedTime||Date.now()).toLocaleString()}</td>
+        </tr>
+      `).join('');
+      searchTableWrap.innerHTML = `
+        <table class="table">
+          <thead><tr><th>ประเภท</th><th>ชื่อ</th><th>คน</th><th>สถานะ</th><th>เวลา</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="small">แสดงสูงสุด 30 รายการ</p>
+      `;
+    }else{
+      searchTableWrap.innerHTML = '';
+    }
+  };
+
+  function renderStats(){
+    const s = QueueApp.stats();
+    document.getElementById('st_total').textContent = s.total;
+    document.getElementById('st_waiting').textContent = s.waiting;
+    document.getElementById('st_served').textContent = s.served;
+    document.getElementById('st_cancel').textContent = s.cancelled;
+    document.getElementById('st_avg').textContent = `${s.avgWait} นาที`;
+  }
+
+  function renderTables(){
+    const wrap = document.getElementById('tables');
+    const t = QueueApp.tables();
+    wrap.innerHTML = t.map(x=>{
+      const occ = QueueApp.getActiveByTable(x.id);
+      const isBusy = x.busy || !!occ;
+
+      let timeRow = '';
+      if(occ && occ.status==='seated' && occ.expiresAt){
+        const left = new Date(occ.expiresAt).getTime() - Date.now();
+        const low  = left <= 10*60000;
+        timeRow = `
+          <div class="kv">
+            <div>เวลาคงเหลือ</div>
+            <div class="badge ${low?'bad':'warn'}">${QueueApp.msToMinSec(left)}</div>
+          </div>`;
+      }else if(occ && occ.status==='called' && occ.callExpireAt){
+        const left = new Date(occ.callExpireAt).getTime() - Date.now();
+        const low  = left <= 2*60000;
+        timeRow = `
+          <div class="kv">
+            <div>เวลารอรับโต๊ะ</div>
+            <div class="badge ${low?'bad':'warn'}">${QueueApp.msToMinSec(left)}</div>
+          </div>`;
+      }
+
+      let subline = '';
+      if (occ) {
+  if (occ.status === 'seated') {
+    subline = `<div class="small">นั่งแล้ว: ${QueueApp.esc(occ.name)} (${occ.party} คน)</div>`;
+  } else if (occ.status === 'called') {
+    subline = `<div class="small">เรียกแล้ว: ${QueueApp.esc(occ.name)} (${occ.party} คน)</div>`;
+  } else if (occ.status === 'awaiting_payment') {
+    subline = `<div class="small">หมดเวลาแล้ว — รอทำบิล: ${QueueApp.esc(occ.name)} (${occ.party} คน)</div>`;
+  }
+}
+
+
+      let buttons = '';
+if(occ){
+  if(occ.status==='called'){
+    buttons = `
+      <button class="btn ok small" onclick="seatByTable('${x.id}')">นั่งโต๊ะ</button>
+      <button class="btn warn small" onclick="uncall('${x.id}')">ยกเลิกการเรียก</button>
+    `;
+  }else if(occ.status==='seated'){
+    buttons = `
+      <button class="btn small" onclick="extend('${x.id}',15)">+15 นาที</button>
+      <button class="btn ok" onclick="checkout('${x.id}')">ทำบิล</button>
+      <button class="btn bad" onclick="free('${x.id}')">โต๊ะว่าง</button>
+    `;
+  }else if(occ.status==='awaiting_payment'){
+    // <<-- กรณีหมดเวลาแล้ว ต้อง “ทำบิล” ก่อนถึงจะเข้า history
+    buttons = `
+      <button class="btn ok" onclick="checkout('${x.id}')">ทำบิล</button>
+      <button class="btn bad" onclick="free('${x.id}')">โต๊ะว่าง</button>
+    `;
+  }
+}else{
+  buttons = `<button class="btn" onclick="noop()">—</button>`;
+}
+
+
+      return `
+        <div class="card">
+          <div class="flex">
+            <strong>${QueueApp.esc(x.name)}</strong>
+            <span class="badge right">${x.capacity} ที่นั่ง</span>
+          </div>
+          <div class="kv">
+            <div>สถานะ</div>
+            <div class="badge ${isBusy?'warn':'ok'}">${isBusy?'ไม่ว่าง':'ว่าง'}</div>
+          </div>
+          ${subline}
+          ${timeRow}
+          <div class="flex">${buttons}</div>
+        </div>`;
+    }).join('');
+  }
+
+  window.extend = (tableId, mins=15)=>{ QueueApp.extendSeat(tableId, mins); renderAll(); };
+  window.free = (id)=>{
+    const occ = QueueApp.getActiveByTable(id);
+    if(occ){
+      if(confirm('ยืนยัน “เสร็จสิ้น/โต๊ะว่าง” สำหรับลูกค้าชุดนี้?')){
+        QueueApp.complete(occ.id);
+        renderAll();
+      }
+    }else{
+      QueueApp.freeTable(id);
+      renderAll();
+    }
+  };
+  window.noop = ()=>{};
+  window.seatByTable = (tableId)=>{ QueueApp.seatByTable(tableId); renderAll(); };
+  window.uncall = (tableId)=>{ 
+    if(confirm('ยกเลิกการเรียกคิวนี้และคืนโต๊ะ?')){ QueueApp.uncallTable(tableId); renderAll(); }
+  };
+
+  function renderQueue(){
+    const q = QueueApp.getWaitingSorted();
+    const tbody = document.querySelector('#tblQueue tbody');
+    tbody.innerHTML = q.map((it,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td>${it.type==='reservation'?'จอง':'Walk-in'}</td>
+        <td>${QueueApp.esc(it.name)}</td>
+        <td>${it.party}</td>
+        <td>${new Date(it.type==='reservation'?it.requestedTime:it.checkInTime).toLocaleString()}</td>
+        <td class="flex">
+          <button class="btn ok small" onclick="seat('${it.id}')">นั่งโต๊ะ</button>
+          <button class="btn ok small" onclick="completeItem('${it.id}')">เสร็จสิ้น</button>
+          <button class="btn bad small" onclick="cancelItem('${it.id}')">ยกเลิก</button>
+          <button class="btn warn small" onclick="noshow('${it.id}')">No-show</button>
+          <button class="btn small" onclick="requeue('${it.id}')">ย้ายไปท้ายคิว</button>
+        </td>
+      </tr>
+    `).join('');
+
+    const future = QueueApp.futureReservationsCount ? QueueApp.futureReservationsCount() : 0;
+    const cardWrap = document.querySelector('#tblQueue').parentElement;
+    const noteId = 'future-note';
+    let note = document.getElementById(noteId);
+    if(!note){
+      note = document.createElement('div');
+      note.id = noteId; note.className='small'; note.style.marginTop='6px';
+      cardWrap.appendChild(note);
+    }
+    note.textContent = future>0 ? `มีคิวจองในอนาคต ${future} รายการ (จะแสดงในคิวเมื่อถึงวันนัด)` : '';
+
+    const pending = QueueApp.todayReservationsPending ? QueueApp.todayReservationsPending() : [];
+    const noteId2 = 'pending-note';
+    let note2 = document.getElementById(noteId2);
+    if(!note2){
+      note2 = document.createElement('div');
+      note2.id = noteId2; note2.className='small'; note2.style.marginTop='6px';
+      cardWrap.appendChild(note2);
+    }
+    if(pending.length){
+      const nextOne = pending[0];
+      note2.textContent = `มีจองวันนี้ ${pending.length} รายการที่ยังไม่ถึงเวลารับสิทธิ์เรียก (ตัวถัดไป: ${new Date(nextOne.requestedTime).toLocaleTimeString()})`;
+    }else{
+      note2.textContent = '';
+    }
+  }
+
+  window.seat = (id)=>{ const ok = QueueApp.markSeated(id); if(!ok){ alert('ยังไม่มีโต๊ะว่างที่พอดีกับจำนวนคนชุดนี้'); return; } renderAll(); };
+  window.completeItem = (id)=>{ QueueApp.complete(id); renderAll(); };
+  window.cancelItem = (id)=>{ if(confirm('ยืนยันยกเลิกคิว?')){ QueueApp.cancelItem(id,'admin'); renderAll(); } };
+  window.noshow = (id)=>{ if(confirm('ยืนยัน No-show?')){ QueueApp.markNoShow(id); renderAll(); } };
+  window.requeue = (id)=>{ const r=QueueApp.requeue(id); if(r) alert('ย้ายไปท้ายคิวเป็น Walk-in แล้ว'); renderAll(); };
+
+  function renderHistory(){
+    const d = QueueApp.load();
+    const today = new Date().toISOString().slice(0,10);
+    const finishedToday = d.history
+      .filter(it => (it.completedAt || it.cancelledAt || it.noShowAt || it.createdAt || '').slice(0,10) === today)
+      .sort((a,b)=> new Date(b.completedAt||b.cancelledAt||b.noShowAt||b.createdAt) - new Date(a.completedAt||a.cancelledAt||a.noShowAt||a.createdAt))
+      .slice(0,20);
+    const rows = finishedToday.map(it=>{
+      const total = it.bill?.total!=null ? Number(it.bill.total).toLocaleString('th-TH',{minimumFractionDigits:2})+' ฿' : '-';
+      return `
+        <tr>
+          <td>${new Date(it.completedAt||it.cancelledAt||it.noShowAt||it.createdAt).toLocaleTimeString()}</td>
+          <td>${QueueApp.esc(it.name)}</td>
+          <td>${it.type}</td>
+          <td>${QueueApp.esc(it.status)}</td>
+          <td>${it.party}</td>
+          <td>${it.tableId || '-'}</td>
+          <td>${total}</td>
+        </tr>
+      `;
+    }).join('');
+    document.querySelector('#tblHistory tbody').innerHTML = rows || `<tr><td colspan="7" class="small">ยังไม่มีประวัติ</td></tr>`;
+  }
+
+  function renderAll(){ renderStats(); renderTables(); renderQueue(); renderHistory(); }
+
+  setInterval(()=>{
+    if(QueueApp.isAdmin()){
+      QueueApp.sweepCalled();
+      QueueApp.sweepExpired();
+      renderAll();
+    }
+  }, 1000);
+});
+</script>
+
+<!-- Billing Modal (บุฟเฟต์อย่างเดียว) -->
+<div id="billModal" style="
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.35);
+  z-index:9999; align-items:center; justify-content:center;">
+  <div class="card" style="width:560px; max-width:92vw">
+    <div class="flex">
+      <h3 style="margin:0">🧾 ทำบิล</h3>
+      <button class="btn right" id="billClose">ปิด</button>
+    </div>
+    <hr/>
+
+    <div class="row">
+      <div>
+        <label>แพ็กเกจ</label>
+        <input class="input" value="บุฟเฟต์ 90 นาที — 299/คน" disabled />
+      </div>
+      <div>
+        <label>จำนวนลูกค้า (จากคิว)</label>
+        <input id="billParty" class="input" type="number" min="1" value="2" disabled />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label>เครื่องดื่มรีฟิล (29/คน)</label>
+        <input id="billDrinks" class="input" type="number" min="0" value="0"/>
+      </div>
+      <div>
+        <label>เพิ่มอื่นๆ (บาท)</label>
+        <input id="billExtras" class="input" type="number" min="0" step="1" value="0"/>
+      </div>
+    </div>
+
+    <div class="flex" style="margin-top:10px">
+      <label class="flex" style="gap:6px">
+        <input type="checkbox" id="billMember"/>
+        เป็นสมาชิก (ลด 5%)
+      </label>
+      <span class="small">* ลด 5% จากยอดก่อน VAT</span>
+    </div>
+
+    <hr/>
+    <div id="billSummary" class="small"></div>
+
+    <div class="flex" style="margin-top:12px">
+      <button class="btn ok" id="billSubmit">ยืนยันทำบิล & เสร็จสิ้น</button>
+      <button class="btn" id="billRecalc">คำนวณใหม่</button>
+    </div>
+  </div>
+</div>
+
+<!-- Billing Script (บุฟเฟต์อย่างเดียว) -->
+<script>
+(function(){
+  const VAT_RATE = 0.07;
+  const PRICE = { buffetPerPerson: 299, drinkPerPerson: 29 };
+
+  const billModal   = document.getElementById('billModal');
+  const billClose   = document.getElementById('billClose');
+  const billParty   = document.getElementById('billParty');
+  const billDrinks  = document.getElementById('billDrinks');
+  const billExtras  = document.getElementById('billExtras');
+  const billMember  = document.getElementById('billMember');
+  const billSummary = document.getElementById('billSummary');
+  const billSubmit  = document.getElementById('billSubmit');
+  const billRecalc  = document.getElementById('billRecalc');
+
+  let _currentTableId = null;
+  let _currentItem = null;
+
+  function fmt(n){ return Number(n||0).toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  function calcDetail({party, drinksCount, extras, isMember}){
+    const main = (party||0) * PRICE.buffetPerPerson;                 // บุฟเฟต์ 299/คน
+    const drinks = (drinksCount||0) * PRICE.drinkPerPerson;          // รีฟิล 29/คน
+    const subtotal = main + drinks + (Number(extras)||0);
+    const discount = isMember ? subtotal * 0.05 : 0;                 // สมาชิก 5%
+    const beforeVat = Math.max(0, subtotal - discount);
+    const vat = beforeVat * VAT_RATE;                                // VAT 7%
+    const total = beforeVat + vat;
+    return {main, drinks, extras:Number(extras)||0, subtotal, discount, beforeVat, vat, total};
+  }
+
+  function renderSummary(){
+    const party = Number(billParty.value||0);
+    const drinksCount = Number(billDrinks.value||0);
+    const extras = Number(billExtras.value||0);
+    const isMember = billMember.checked;
+
+    const s = calcDetail({party, drinksCount, extras, isMember});
+    billSummary.innerHTML = `
+      <div class="grid cols-2">
+        <div>
+          <div class="kv"><div>แพ็กเกจ</div><div class="badge">บุฟเฟต์ 299/คน</div></div>
+          <div class="kv"><div>เมนูหลัก</div><div class="badge">${fmt(s.main)} ฿</div></div>
+          <div class="kv"><div>เครื่องดื่ม</div><div class="badge">${fmt(s.drinks)} ฿</div></div>
+          <div class="kv"><div>เพิ่มอื่นๆ</div><div class="badge">${fmt(s.extras)} ฿</div></div>
+        </div>
+        <div>
+          <div class="kv"><div>ยอดก่อนส่วนลด</div><div class="badge">${fmt(s.subtotal)} ฿</div></div>
+          <div class="kv"><div>ส่วนลดสมาชิก 5%</div><div class="badge ok">− ${fmt(s.discount)} ฿</div></div>
+          <div class="kv"><div>ก่อน VAT</div><div class="badge">${fmt(s.beforeVat)} ฿</div></div>
+          <div class="kv"><div>VAT 7%</div><div class="badge warn">${fmt(s.vat)} ฿</div></div>
+          <hr/>
+          <div class="kv"><div><strong>สุทธิ</strong></div><div class="badge">${fmt(s.total)} ฿</div></div>
+        </div>
+      </div>
+    `;
+    return s;
+  }
+
+  function openModalFor(tableId){
+    _currentTableId = tableId;
+    _currentItem = QueueApp.getActiveByTable(tableId);
+    if(!_currentItem){ alert('ไม่พบข้อมูลโต๊ะนี้'); return; }
+    billParty.value = _currentItem.party || 2;
+    billDrinks.value = _currentItem.party || 0;
+    billExtras.value = 0;
+    billMember.checked = false;
+
+    renderSummary();
+    billModal.style.display='flex';
+  }
+
+  function closeModal(){
+    billModal.style.display='none';
+    _currentTableId = null;
+    _currentItem = null;
+  }
+
+  billClose.onclick = closeModal;
+  billRecalc.onclick = renderSummary;
+
+  billSubmit.onclick = ()=>{
+    if(!_currentItem){ return; }
+    const detail = renderSummary();
+    const bill = {
+      tableId: _currentTableId,
+      party: Number(billParty.value||0),
+      drinksCount: Number(billDrinks.value||0),
+      extras: Number(billExtras.value||0),
+      isMember: billMember.checked,
+      ...detail,
+      vatRate: VAT_RATE,
+      createdAt: new Date().toISOString(),
+      pkg: 'buffet'  // เก็บระบุไว้เผื่ออนาคต
+    };
+    QueueApp.completeWithBill(_currentItem.id, bill);
+    closeModal();
+    if(typeof renderAll==='function') renderAll();
+    alert(`ปิดบิลสำเร็จ — สุทธิ ${bill.total.toLocaleString('th-TH',{minimumFractionDigits:2})} บาท`);
+  };
+
+  window.checkout = openModalFor;
+})();
+</script>
+</body>
+</html>

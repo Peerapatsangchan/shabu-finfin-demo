@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Shabu/BBQ Queue | ผู้ใช้</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Toast container -->
+<div id="toastWrap" class="toast-wrap" aria-live="polite"></div>
+
+<div class="container">
+  <div class="header">
+    <div class="brand">
+      <img class="logo" src="shabu.png" alt="Shabu / BBQ Logo" />
+      <h1>🥢 Shabu Fin Fin</h1>
+    </div>
+    <div class="flex">
+      <span class="badge">⏱ ค่าเฉลี่ยบริการ ~45 นาที</span>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="emoji">🔥</div>
+    <div class="title">ย่างร้อน ๆ ต้มเดือด ๆ</div>
+    <span class="small">จองล่วงหน้ามาได้เลย หรือ Walk-in ที่ร้าน</span>
+  </div>
+
+  <div class="tabbar" role="tablist">
+    <button class="tab active" data-tab="reserve" role="tab" aria-selected="true">📅 จองล่วงหน้า</button>
+    <button class="tab" data-tab="walkin" role="tab" aria-selected="false">🧍‍♀️ Walk-in หน้างาน</button>
+    <button class="tab" data-tab="mystatus" role="tab" aria-selected="false">🔎 สถานะ / แก้ไข / ยกเลิก</button>
+    <button class="tab" data-tab="menu" role="tab" aria-selected="false">🍲 เมนู & โปร</button>
+  </div>
+
+  <!-- จองล่วงหน้า -->
+  <div class="card" id="reserve" aria-live="polite">
+    <div class="grid cols-2">
+      <div>
+        <div class="row">
+          <div>
+            <label for="r_name">ชื่อ</label>
+            <input id="r_name" class="input" placeholder="ชื่อ-สกุล" />
+          </div>
+          <div>
+            <label for="r_phone">โทรศัพท์</label>
+            <input id="r_phone" class="input" placeholder="เช่น 080xxxxxxx" inputmode="tel" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="r_party">จำนวนลูกค้า</label>
+            <div class="stepper">
+              <button type="button" class="btn" id="r_dec">−</button>
+              <input id="r_party" type="number" class="input" min="1" max="12" value="2" />
+              <button type="button" class="btn" id="r_inc">+</button>
+            </div>
+          </div>
+          <div>
+            <label for="r_datetime">วันเวลา</label>
+            <input id="r_datetime" type="datetime-local" class="input" />
+          </div>
+        </div>
+        <div class="flex" style="margin-top:10px">
+          <button class="btn primary" id="btnReserve">✅ จองคิว</button>
+          <span class="help">“จองล่วงหน้า” จะมาก่อน Walk-in</span>
+        </div>
+
+        <div id="reserveTicket" class="ticket" style="display:none">
+          <div class="head"><span class="emoji">🎫</span><strong>บัตรจองของคุณ</strong></div>
+          <div class="grid">
+            <div class="cell"><div class="label">ลำดับ</div><div id="rt_pos" class="value">-</div></div>
+            <div class="cell"><div class="label">ETA</div><div id="rt_eta" class="value">- นาที</div></div>
+            <div class="cell"><div class="label">โค้ด</div><div id="rt_code" class="value">-</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="kv"><div>ตำแหน่งคิวล่าสุดของคุณ</div><div id="lastPos" class="badge">—</div></div>
+        <div class="kv"><div>เวลารอโดยประมาณ</div><div id="lastEta" class="badge warn">—</div></div>
+        <div class="kv"><div>โค้ดตรวจสอบสถานะ</div><div id="lastCode" class="badge">—</div></div>
+        <hr />
+        <button class="btn accent" id="btnNotify">🔔 เปิดการแจ้งเตือน</button>
+        <p class="small">เมื่อถึงคิว ระบบจะ “เด้งแจ้งเตือน + ส่งเสียงบี๊บ” (เปิดหน้าเว็บทิ้งไว้)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Walk-in -->
+  <div class="card" id="walkin" style="display:none" aria-live="polite">
+    <div class="row">
+      <div>
+        <label for="w_name">ชื่อ</label>
+        <input id="w_name" class="input" placeholder="ชื่อ-สกุล" />
+      </div>
+      <div>
+        <label for="w_phone">โทรศัพท์</label>
+        <input id="w_phone" class="input" placeholder="เช่น 080xxxxxxx" inputmode="tel" />
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="w_party">จำนวนลูกค้า</label>
+        <div class="stepper">
+          <button type="button" class="btn" id="w_dec">−</button>
+          <input id="w_party" type="number" class="input" min="1" max="12" value="2" />
+          <button type="button" class="btn" id="w_inc">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="flex" style="margin-top:10px">
+      <button class="btn primary" id="btnWalkin">📝 ลงชื่อเข้าคิว</button>
+      <span class="help">Walk-in จะเรียงตามเวลามาถึง</span>
+    </div>
+
+    <div id="walkinTicket" class="ticket" style="display:none">
+      <div class="head"><span class="emoji">🔥</span><strong>ลงชื่อสำเร็จ!</strong></div>
+      <div class="grid">
+        <div class="cell"><div class="label">ลำดับ</div><div id="wt_pos" class="value">-</div></div>
+        <div class="cell"><div class="label">ETA</div><div id="wt_eta" class="value">- นาที</div></div>
+        <div class="cell"><div class="label">โค้ด</div><div id="wt_code" class="value">-</div></div>
+      </div>
+      <div class="small" style="margin-top:6px">เก็บโค้ดไว้เพื่อตรวจสถานะหรือแจ้งหน้าร้าน</div>
+    </div>
+  </div>
+
+  <!-- สถานะ / แก้ไข / ยกเลิก -->
+  <div class="card" id="mystatus" style="display:none" aria-live="polite">
+    <div class="input-inline">
+      <input id="s_phone" class="input" placeholder="เบอร์โทร" inputmode="tel" />
+      <input id="s_code" class="input" placeholder="โค้ด 6 หลัก" inputmode="numeric" />
+      <button class="btn" id="btnCheck">ตรวจสอบ</button>
+    </div>
+    <div id="statusArea" style="margin-top:12px"></div>
+  </div>
+
+  <!-- เมนู & โปรโมชัน (เอาเฉพาะบุฟเฟต์) -->
+  <div class="card" id="menu" style="display:none">
+    <div class="grid cols-3">
+      <div class="card">
+        <div class="flex"><strong>BBQ บุฟเฟต์ 90 นาที</strong><span class="badge right">299.-</span></div>
+        <p class="small">หมู/ไก่/ทะเล เติมไม่อั้น (ไม่รวมชีส)</p>
+      </div>
+      <div class="card">
+        <div class="flex"><strong>โปรวันเกิด</strong><span class="badge right ok">ฟรี! เค้ก</span></div>
+        <p class="small">แสดงบัตรประชาชนภายในเดือนเกิด</p>
+      </div>
+      <div class="card">
+        <div class="flex"><strong>สมาชิก Shabu Fin Fin</strong><span class="badge right ok">ลด 5%</span></div>
+        <p class="small">สมัครฟรีตอนชำระเงิน (เดโม่: ติ๊ก “สมาชิก” ตอนทำบิล)</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>© 2025 Shabu/BBQ Queue Demo — ใช้เพื่อสาธิตการทำงานเท่านั้น</footer>
+</div>
+
+<script src="queue.js"></script>
+<script>
+/* ====== โค้ดหน้า User เดิม (ไม่มีส่วนชาบูแล้ว) ====== */
+document.addEventListener('DOMContentLoaded', () => {
+  const toastWrap = document.getElementById('toastWrap');
+  function showToast({title, msg, icon='✅', type='success', timeout=5000}){
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `
+      <div class="icon">${icon}</div>
+      <div style="flex:1">
+        <div class="title">${title}</div>
+        ${msg? `<div class="meta">${msg}</div>`:''}
+      </div>
+      <div class="close" aria-label="ปิด">✖</div>
+    `;
+    toastWrap.appendChild(el);
+    const remove = ()=>{ if(el.parentNode){ el.parentNode.removeChild(el);} };
+    el.querySelector('.close').onclick = remove;
+    setTimeout(remove, timeout);
+  }
+  const clamp = (v, min, max)=> Math.max(min, Math.min(max, v));
+
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.onclick=()=>{
+      document.querySelectorAll('.tab').forEach(x=>{
+        x.classList.remove('active'); x.setAttribute('aria-selected','false');
+      });
+      t.classList.add('active'); t.setAttribute('aria-selected','true');
+      ['reserve','walkin','mystatus','menu'].forEach(id=> document.getElementById(id).style.display='none');
+      document.getElementById(t.dataset.tab).style.display='block';
+    };
+  });
+
+  const r_name = document.getElementById('r_name');
+  const r_phone = document.getElementById('r_phone');
+  const r_party = document.getElementById('r_party');
+  const r_inc = document.getElementById('r_inc');
+  const r_dec = document.getElementById('r_dec');
+  const r_datetime = document.getElementById('r_datetime');
+  const btnReserve = document.getElementById('btnReserve');
+  const lastPos = document.getElementById('lastPos');
+  const lastEta = document.getElementById('lastEta');
+  const lastCode = document.getElementById('lastCode');
+  const btnNotify = document.getElementById('btnNotify');
+  const reserveTicket = document.getElementById('reserveTicket');
+  const rt_pos = document.getElementById('rt_pos');
+  const rt_eta = document.getElementById('rt_eta');
+  const rt_code = document.getElementById('rt_code');
+
+  r_inc.onclick = ()=> r_party.value = clamp((parseInt(r_party.value||'0',10)+1),1,12);
+  r_dec.onclick = ()=> r_party.value = clamp((parseInt(r_party.value||'0',10)-1),1,12);
+
+  const w_name = document.getElementById('w_name');
+  const w_phone = document.getElementById('w_phone');
+  const w_party = document.getElementById('w_party');
+  const w_inc = document.getElementById('w_inc');
+  const w_dec = document.getElementById('w_dec');
+  const btnWalkin = document.getElementById('btnWalkin');
+  const walkinTicket = document.getElementById('walkinTicket');
+  const wt_pos = document.getElementById('wt_pos');
+  const wt_eta = document.getElementById('wt_eta');
+  const wt_code = document.getElementById('wt_code');
+
+  w_inc.onclick = ()=> w_party.value = clamp((parseInt(w_party.value||'0',10)+1),1,12);
+  w_dec.onclick = ()=> w_party.value = clamp((parseInt(w_party.value||'0',10)-1),1,12);
+
+  const s_phone = document.getElementById('s_phone');
+  const s_code = document.getElementById('s_code');
+  const btnCheck = document.getElementById('btnCheck');
+  const statusArea = document.getElementById('statusArea');
+
+  btnReserve.onclick = ()=>{
+    const name=r_name.value.trim(), phone=r_phone.value.trim(), party=parseInt(r_party.value||'0',10);
+    const dt = r_datetime.value? new Date(r_datetime.value): null;
+    if(!name||!phone||!party||!dt){ showToast({title:'ข้อมูลไม่ครบ', msg:'กรุณากรอกชื่อ เบอร์ จำนวนคน และวันเวลา', icon:'⚠️', type:'info'}); return; }
+    if(dt < new Date()){ showToast({title:'เวลาไม่ถูกต้อง', msg:'กรุณาเลือกวันเวลาในอนาคต', icon:'🕑', type:'info'}); return; }
+    if(party < 1 || party > 12){ showToast({title:'จำนวนคน 1–12', icon:'👥', type:'info'}); return; }
+
+    const item = QueueApp.addReservation({name, phone, party, timeISO: dt.toISOString()});
+    const pos = QueueApp.positionOf(item.id);
+    const eta = QueueApp.etaFor(item.id);
+
+    lastPos.textContent = pos? `ลำดับที่ ${pos}`:'—';
+    lastEta.textContent = `${eta} นาที (ประมาณ)`;
+    lastCode.textContent = item.code;
+
+    rt_pos.textContent = pos ?? '-';
+    rt_eta.textContent = `${eta} นาที`;
+    rt_code.textContent = item.code;
+    reserveTicket.style.display = 'block';
+
+    showToast({title:'จองสำเร็จ', msg:`โค้ดของคุณ: ${item.code}`, icon:'🎉', type:'success'});
+    QueueApp.notify('จองสำเร็จ', `โค้ดของคุณ: ${item.code}`);
+  };
+
+  btnWalkin.onclick = ()=>{
+    const name=w_name.value.trim(), phone=w_phone.value.trim(), party=parseInt(w_party.value||'0',10);
+    if(!name||!phone||!party){ showToast({title:'ข้อมูลไม่ครบ', msg:'กรุณากรอกชื่อ เบอร์ และจำนวนคน', icon:'⚠️', type:'info'}); return; }
+    if(party < 1 || party > 12){ showToast({title:'จำนวนคน 1–12', icon:'👥', type:'info'}); return; }
+
+    const item = QueueApp.addWalkIn({name, phone, party});
+    const pos = QueueApp.positionOf(item.id);
+    const eta = QueueApp.etaFor(item.id);
+
+    wt_pos.textContent = pos ?? '-';
+    wt_eta.textContent = `${eta} นาที`;
+    wt_code.textContent = item.code;
+    walkinTicket.style.display = 'block';
+
+    showToast({
+      title:'ลงชื่อเข้าคิวสำเร็จ',
+      msg:`คิวของคุณลำดับที่ ${pos} | โค้ด ${item.code} | ETA ~ ${eta} นาที`,
+      icon:'🔥',
+      type:'success'
+    });
+  };
+
+  btnNotify.onclick = async ()=>{
+    const perm = await QueueApp.enableNotifications();
+    const ok = String(perm).toLowerCase()==='granted';
+    showToast({title: ok?'เปิดการแจ้งเตือนแล้ว':'ยังไม่ได้เปิดการแจ้งเตือน', icon: ok?'🔔':'🔕', type: ok?'success':'info'});
+  };
+
+  btnCheck.onclick = renderStatus;
+  function renderStatus(){
+    const phone = s_phone.value.trim(), code=s_code.value.trim();
+    const {current, history} = QueueApp.myItems(phone, code);
+    const esc = QueueApp.esc;
+    statusArea.innerHTML='';
+
+    if(current.length===0 && history.length===0){
+      statusArea.innerHTML='<p class="help">ไม่พบคิวของคุณ</p>'; 
+      showToast({title:'ไม่พบคิว', icon:'🔎', type:'info'}); 
+      return;
+    }
+
+    if(current.length){
+      const list = current.map(it=>{
+        const pos = it.status==='waiting' ? (QueueApp.positionOf(it.id)||'-') : '-';
+        const eta = it.status==='waiting' ? `${QueueApp.etaFor(it.id)} นาที` : '-';
+        return `
+        <tr>
+          <td>${it.type==='reservation'?'จอง':'Walk-in'}</td>
+          <td>${esc(it.name)}</td>
+          <td>${it.party}</td>
+          <td>${esc(it.status)}</td>
+          <td>${pos}</td>
+          <td>${eta}</td>
+        </tr>`;
+      }).join('');
+      statusArea.innerHTML += `
+        <h3>คิวปัจจุบัน</h3>
+        <table class="table">
+          <thead><tr><th>ประเภท</th><th>ชื่อ</th><th>คน</th><th>สถานะ</th><th>ลำดับ</th><th>ETA</th></tr></thead>
+          <tbody>${list}</tbody>
+        </table>`;
+    }
+    if(history.length){
+      const list2 = history.slice(-10).reverse().map(it=>`
+        <tr>
+          <td>${it.type}</td><td>${esc(it.name)}</td><td>${it.party}</td><td>${esc(it.status)}</td>
+          <td>${new Date(it.createdAt).toLocaleString()}</td>
+        </tr>
+      `).join('');
+      statusArea.innerHTML += `
+        <h3>ประวัติล่าสุด</h3>
+        <table class="table">
+         <thead><tr><th>ประเภท</th><th>ชื่อ</th><th>คน</th><th>สถานะ</th><th>เวลา</th></tr></thead>
+         <tbody>${list2}</tbody>
+        </table>`;
+    }
+  }
+
+  setInterval(()=>{
+    const phone = (document.getElementById('s_phone').value||'').trim();
+    const code = (document.getElementById('s_code').value||'').trim();
+    if(!phone||!code) return;
+    const {current} = QueueApp.myItems(phone, code);
+    current.forEach(it=>{
+      if(it.status==='called'){
+        showToast({title:'ถึงคิวคุณแล้ว!', msg:`โต๊ะ: ${it.tableId||'-'}`, icon:'🥢', type:'success'});
+        QueueApp.notify('ถึงคิวคุณแล้ว!', `โต๊ะ: ${it.tableId||'-'}`);
+        QueueApp.beep();
+      }
+    });
+  }, 4000);
+});
+</script>
+</body>
+</html>

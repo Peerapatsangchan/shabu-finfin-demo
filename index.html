@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shabu Finfin Demo</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #fff7ed, #ffe4e6);
+      color: #2d2d2d;
+    }
+
+    .container {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 900px;
+      background: white;
+      border-radius: 28px;
+      padding: 40px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+      text-align: center;
+    }
+
+    .logo {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 42px;
+      margin: 10px 0;
+      color: #c2410c;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: #555;
+      margin-bottom: 30px;
+    }
+
+    .highlight {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin: 30px 0;
+    }
+
+    .box {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 18px;
+      padding: 18px;
+      font-weight: bold;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+
+    .btn {
+      text-decoration: none;
+      padding: 16px 28px;
+      border-radius: 999px;
+      font-weight: bold;
+      transition: 0.2s;
+      min-width: 180px;
+      display: inline-block;
+    }
+
+    .btn-user {
+      background: #f97316;
+      color: white;
+    }
+
+    .btn-admin {
+      background: #7c2d12;
+      color: white;
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+
+    .demo-guide {
+      margin-top: 35px;
+      padding: 20px;
+      background: #f9fafb;
+      border-radius: 18px;
+      text-align: left;
+    }
+
+    .demo-guide h3 {
+      margin-top: 0;
+      color: #c2410c;
+    }
+
+    .account {
+      background: white;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      margin-top: 10px;
+      line-height: 1.8;
+    }
+
+    footer {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #777;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 32px;
+      }
+
+      .card {
+        padding: 28px 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card">
+      <img src="shabu.png" alt="Shabu Finfin Logo" class="logo" />
+
+      <h1>Shabu Finfin</h1>
+      <p class="subtitle">
+        Restaurant Queue Management System<br />
+        ระบบจัดการคิวร้านอาหารสำหรับฝั่งลูกค้าและแอดมิน
+      </p>
+
+      <div class="highlight">
+        <div class="box">จองคิวล่วงหน้า</div>
+        <div class="box">Walk-in Queue</div>
+        <div class="box">Admin Dashboard</div>
+        <div class="box">Table Optimization</div>
+      </div>
+
+      <div class="buttons">
+        <a href="user.html" class="btn btn-user">เข้าใช้งานฝั่ง User</a>
+        <a href="admin.html" class="btn btn-admin">เข้าใช้งานฝั่ง Admin</a>
+      </div>
+
+      <div class="demo-guide">
+        <h3>Demo Guide</h3>
+        <p><strong>User:</strong> ทดลองจองคิว / Walk-in / ตรวจสอบสถานะ</p>
+        <p><strong>Admin:</strong> ทดลองเรียกคิว / จัดโต๊ะ / ดู Dashboard</p>
+
+        <div class="account">
+          <strong>Admin Login</strong><br />
+          Username: <strong>admin</strong><br />
+          Password: <strong>123456</strong>
+        </div>
+      </div>
+
+      <footer>
+        Business Development & Sales Internship Assignment
+      </footer>
+    </div>
+  </div>
+</body>
+</html>
